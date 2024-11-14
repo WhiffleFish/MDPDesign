@@ -9,7 +9,7 @@ end
 const HiGHS_DEFAULTS = (;log_to_console=false)
 
 solver_defaults(::Any) = (;)
-solver_defaults(::Type{HIGHS.Optimizer}) = HiGHS_DEFAULTS
+solver_defaults(::Type{HiGHS.Optimizer}) = HiGHS_DEFAULTS
 
 function kwargs2attrs(kwargs)
     return map(keys(kwargs), values(kwargs)) do k,v
@@ -19,7 +19,7 @@ end
 
 kwargs2attrs(kwargs, defaults) = kwargs2attrs(merge(defaults, kwargs))
 
-function POMDPs.solve_info(sol::LPSolver, mdp::SparseTabularMDP)
+function POMDPTools.solve_info(sol::LPSolver, mdp::SparseTabularMDP)
     (;T,R,discount) = mdp
     γ = discount
     ns = length(states(mdp))
@@ -37,4 +37,7 @@ function POMDPs.solve_info(sol::LPSolver, mdp::SparseTabularMDP)
     optimize!(model)
     return JuMP.value.(V), (; model)
 end
+
+optimal_actions(mdp::SparseTabularMDP, V) = optimal_actions(mdp.R, mdp.T, mdp.discount, V)
+optimal_actions(R,T,γ,V) = map(argmax∘tuple, (R[:,i] .+ γ .* T[i] * V for i ∈ actions(mdp))...)
 
