@@ -1,3 +1,11 @@
+struct ParameterizedMDPWrapper{TT, DTT}
+    mdp::MDP
+    T::TT
+    DT::DTT
+end
+
+POMDPs.discount(pmdp::ParameterizedMDPWrapper) = discount(pmdp.mdp)
+
 struct ParameterizedTabularMDP{TT, DTT} <: MDP{Int,Int}
     T::TT # T(θ)
     DT::DTT # DT(θ)
@@ -6,14 +14,6 @@ struct ParameterizedTabularMDP{TT, DTT} <: MDP{Int,Int}
     terminal::Set{Int}
     discount::Float64
 end
-
-struct ParameterizedMDPWrapper{TT, DTT}
-    mdp::MDP
-    T::TT
-    DT::DTT
-end
-
-POMDPs.discount(pmdp::ParameterizedMDPWrapper) = discount(pmdp.mdp)
 
 function ParameterizedTabularMDP(pmdp::ParameterizedMDPWrapper)
     R = POMDPTools.ModelTools.reward_s_a(pmdp.mdp)
@@ -28,6 +28,32 @@ end
 
 function POMDPTools.SparseTabularMDP(mdp::ParameterizedTabularMDP, θ)
     return SparseTabularMDP(mdp.T(θ), mdp.R, mdp.μ0, mdp.terminal, mdp.discount)
+end
+
+struct FrozenParameterizedTabularMDP{TT, DTT, T} <: MDP{Int,Int}
+    T::TT
+    DT::DTT
+    R::Matrix{Float64}
+    μ0::Vector{Float64}
+    terminal::Set{Int}
+    discount::Float64
+    θ::T
+end
+
+function FrozenParameterizedTabularMDP(mdp::ParameterizedTabularMDP, θ)
+    return FrozenParameterizedTabularMDP(
+        mdp.T(θ),
+        mdp.DT(θ),
+        mdp.R,
+        mdp.μ0,
+        mdp.terminal,
+        mdp.discount,
+        θ
+    )
+end
+
+function POMDPTools.SparseTabularMDP(mdp::FrozenParameterizedTabularMDP)
+    return SparseTabularMDP(mdp.T, mdp.R, mdp.μ0, mdp.terminal, mdp.discount)
 end
 
 param_transition(mdp::ParameterizedMDPWrapper, s, a, θ) = mdp.T(mdp.mdp, s, a, θ)
