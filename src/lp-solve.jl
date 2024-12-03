@@ -30,7 +30,7 @@ function POMDPTools.solve_info(sol::LPSolver, mdp::SparseTabularMDP)
         kwargs2attrs(sol.settings, solver_defaults(sol.sol))...
     )
     @variable(model, V[1:ns])
-    for i ∈ actions(mdp)
+    constraints = map(actions(mdp)) do i
         @constraint(model, V .≥ R[:,i] .+ γ .* T[i] * V)
     end
     @objective(model, Min, sum(V))

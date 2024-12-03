@@ -99,8 +99,17 @@ function full_param_transition(mdp::SimpleGridWorld, s::AbstractVector{Int}, a::
 end
 
 function full_dparam_transition(mdp::SimpleGridWorld, s::AbstractVector{Int}, a::Symbol, θv::AbstractArray)
+    ∇T_s = convert(Vector{Union{
+        SparseCat{SVector{1, SVector{2, Int64}}, SVector{1, Float64}}, 
+        SparseCat{SVector{5, SVector{2, Int64}}, SVector{5, Float64}}
+        }},
+        fill(
+            SparseCat(SA[GWPos(-1,-1)], SA[0.0]), 
+            prod(mdp.size)
+        )
+    )
     if s in mdp.terminate_from || isterminal(mdp, s)
-        return SparseCat(SA[GWPos(-1,-1)], SA[0.0])
+        return ∇T_s
     end
     s_idx = stateindex(mdp, s)
     θ = θv[s_idx]
@@ -126,12 +135,6 @@ function full_dparam_transition(mdp::SimpleGridWorld, s::AbstractVector{Int}, a:
             probs[i+1] += dprob
         end
     end
-
-    ∇T_s = convert(Vector{Union{
-        Deterministic{Int}, 
-        SparseCat{SVector{5, SVector{2, Int64}}, SVector{5, Float64}}}},
-        fill(Deterministic(0), prod(mdp.size))
-    )
 
     ∇T_s[s_idx] = SparseCat(convert(SVector, destinations), convert(SVector, probs))
 

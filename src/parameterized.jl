@@ -26,6 +26,8 @@ function ParameterizedTabularMDP(pmdp::ParameterizedMDPWrapper)
     )
 end
 
+POMDPs.discount(pmdp::ParameterizedTabularMDP) = pmdp.discount
+
 function POMDPTools.SparseTabularMDP(mdp::ParameterizedTabularMDP, θ)
     return SparseTabularMDP(mdp.T(θ), mdp.R, mdp.μ0, mdp.terminal, mdp.discount)
 end
@@ -55,6 +57,8 @@ end
 function POMDPTools.SparseTabularMDP(mdp::FrozenParameterizedTabularMDP)
     return SparseTabularMDP(mdp.T, mdp.R, mdp.μ0, mdp.terminal, mdp.discount)
 end
+
+POMDPs.discount(pmdp::FrozenParameterizedTabularMDP) = pmdp.discount
 
 param_transition(mdp::ParameterizedMDPWrapper, s, a, θ) = mdp.T(mdp.mdp, s, a, θ)
 dparam_transition(mdp::ParameterizedMDPWrapper, s, a, θ) = mdp.DT(mdp.mdp, s, a, θ)
@@ -96,45 +100,45 @@ function param_transition_matrix_a_s_sp(pmdp::ParameterizedMDPWrapper, θ)
     return transmats_A_S_S2
 end
 
-function dparam_transition_matrix_a_s_sp(pmdp::ParameterizedMDPWrapper, θ)
-    mdp = pmdp.mdp
-    # Thanks to zach
-    na = length(actions(mdp))
-    state_space = states(mdp)
-    ns = length(state_space)
-    transmat_row_A = [Int64[] for _ in 1:na]
-    transmat_col_A = [Int64[] for _ in 1:na]
-    transmat_data_A = [Float64[] for _ in 1:na]
+# function dparam_transition_matrix_a_s_sp(pmdp::ParameterizedMDPWrapper, θ)
+#     mdp = pmdp.mdp
+#     # Thanks to zach
+#     na = length(actions(mdp))
+#     state_space = states(mdp)
+#     ns = length(state_space)
+#     transmat_row_A = [Int64[] for _ in 1:na]
+#     transmat_col_A = [Int64[] for _ in 1:na]
+#     transmat_data_A = [Float64[] for _ in 1:na]
 
-    for s in state_space
-        si = stateindex(mdp, s)
-        for a in actions(mdp, s)
-            ai = actionindex(mdp, a)
-            if isterminal(mdp, s) # if terminal, there is a probability of 1 of staying in that state
-                # push!(transmat_row_A[ai], si)
-                # push!(transmat_col_A[ai], si)
-                # push!(transmat_data_A[ai], 0.0) # parameters cannot affect distribution out of terminal state
+#     for s in state_space
+#         si = stateindex(mdp, s)
+#         for a in actions(mdp, s)
+#             ai = actionindex(mdp, a)
+#             if isterminal(mdp, s) # if terminal, there is a probability of 1 of staying in that state
+#                 # push!(transmat_row_A[ai], si)
+#                 # push!(transmat_col_A[ai], si)
+#                 # push!(transmat_data_A[ai], 0.0) # parameters cannot affect distribution out of terminal state
                 
-                # NOTE: parameter gradient is zero here, so we don't add anything! 
-                # May come back to bite somehow but idk how 
-            else
-                td = dparam_transition(pmdp, s, a, θ)
-                for (sp, dp) in weighted_iterator(td)
-                    if dp > 0.0
-                        spi = stateindex(mdp, sp)
-                        push!(transmat_row_A[ai], si)
-                        push!(transmat_col_A[ai], spi)
-                        push!(transmat_data_A[ai], dp)
-                    end
-                end
-            end
-        end
-    end
-    transmats_A_S_S2 = [sparse(transmat_row_A[a], transmat_col_A[a], transmat_data_A[a], ns, ns) for a in 1:na]
-    return transmats_A_S_S2
-end
+#                 # NOTE: parameter gradient is zero here, so we don't add anything! 
+#                 # May come back to bite somehow but idk how 
+#             else
+#                 td = dparam_transition(pmdp, s, a, θ)
+#                 for (sp, dp) in weighted_iterator(td)
+#                     if dp > 0.0
+#                         spi = stateindex(mdp, sp)
+#                         push!(transmat_row_A[ai], si)
+#                         push!(transmat_col_A[ai], spi)
+#                         push!(transmat_data_A[ai], dp)
+#                     end
+#                 end
+#             end
+#         end
+#     end
+#     transmats_A_S_S2 = [sparse(transmat_row_A[a], transmat_col_A[a], transmat_data_A[a], ns, ns) for a in 1:na]
+#     return transmats_A_S_S2
+# end
 
-function vec_dparam_transition_matrix_a_s_sp(pmdp::ParameterizedMDPWrapper, θv::AbstractArray)
+function dparam_transition_matrix_a_s_sp(pmdp::ParameterizedMDPWrapper, θv::AbstractArray)
     mdp = pmdp.mdp
     # Thanks to zach
     na = length(actions(mdp))
@@ -156,11 +160,11 @@ function vec_dparam_transition_matrix_a_s_sp(pmdp::ParameterizedMDPWrapper, θv:
                 # NOTE: parameter gradient is zero here, so we don't add anything! 
                 # May come back to bite somehow but idk how 
             else
-                tdθ = vec_dparam_transition(pmdp, s, a, θv)
+                tdθ = dparam_transition(pmdp, s, a, θv)
                 for θ_idx ∈ eachindex(tdθ)
                     td = tdθ[θ_idx]
                     for (sp, dp) in weighted_iterator(td)
-                        if dp > 0.0
+                        if !iszero(dp)
                             spi = stateindex(mdp, sp)
                             push!(transmat_row_A[θ_idx][ai], si)
                             push!(transmat_col_A[θ_idx][ai], spi)

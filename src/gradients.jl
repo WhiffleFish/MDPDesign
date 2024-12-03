@@ -10,15 +10,27 @@ function OptimizedMDPModel(mdp::FrozenParameterizedTabularMDP; kwargs...)
     return OptimizedMDPModel(model, V, constraints, mdp)
 end
 
+POMDPs.discount(pmdp::OptimizedMDPModel) = discount(pmdp.mdp)
+
 function parameterization_gradient(m::OptimizedMDPModel)
     (; constraints, V, mdp) = m
-    (;T, DT) = mdp
-    ∇T = DT
-    x = V
-    γ = discount(mdp)
+    (;DT) = mdp
     λ = mapreduce(vcat, constraints) do c
         dual.(c)
     end
+    return map(DT) do ΔT
+        _parameterization_gradient(m, ΔT, λ)
+    end
+end
+
+# for just a single parameter
+function _parameterization_gradient(m::OptimizedMDPModel, ∇T, λ)
+    (; V, mdp) = m
+    (; T, R) = mdp
+    na = length(T)
+    ns = length(mdp.μ0)
+    x = V
+    γ = discount(mdp)
     A = mapreduce(hcat, T) do T_i
         I - γ*T_i
     end
@@ -36,7 +48,7 @@ function parameterization_gradient(m::OptimizedMDPModel)
         diagm(dλdθ[idxs]) * (-x + R[:, i] + γ * T[i]*x) + diagm(λ[idxs]) * γ * ∇T[i] * x
     end
     dxdθ = Ax \ bx
-    return dxdθ, dλdθ
+    return dxdθ
 end
 
 function parameterization_gradient(T_f, dT_f, R, γ, θ)
