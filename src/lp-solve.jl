@@ -35,7 +35,7 @@ function POMDPTools.solve_info(sol::LPSolver, mdp::SparseTabularMDP)
     end
     @objective(model, Min, sum(V))
     optimize!(model)
-    return JuMP.value.(V), (; model)
+    return JuMP.value.(V), (; model, constraints)
 end
 
 optimal_actions(mdp::SparseTabularMDP, V) = optimal_actions(mdp.R, mdp.T, mdp.discount, V)
