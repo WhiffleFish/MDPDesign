@@ -10,9 +10,9 @@ using SparseArrays
 include("lp-solve.jl")
 export LPSolver
 
+include("parameterized.jl")
+
 include("gradients.jl")
 export parameterization_gradient
-
-include("parameterized.jl")
 
 end # module MDPDesign
