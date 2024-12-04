@@ -1,3 +1,16 @@
+function vec2grid(s::Tuple{Int,Int}, v)
+    if length(v) == prod(s) + 1
+        v = v[1:end-1]
+    end
+    V = Matrix{eltype(v)}(undef, s[1], s[2])
+    LI = LinearIndices(s)
+    for i ∈ eachindex(v)
+        V[LI[i]...] = v[i]
+    end
+    return V
+end
+
+
 function UniformlyParameterizedGridWorld(;kwargs...)
     return ParameterizedMDPWrapper(SimpleGridWorld(;kwargs...), uniform_param_transition, uniform_dparam_transition)
 end
@@ -10,6 +23,7 @@ function uniform_param_transition(mdp::SimpleGridWorld, s::AbstractVector{Int}, 
     if s in mdp.terminate_from || isterminal(mdp, s)
         return Deterministic(GWPos(-1,-1))
     end
+    θ = only(θ)
 
     destinations = MVector{length(actions(mdp))+1, GWPos}(undef)
     destinations[1] = s
@@ -38,9 +52,9 @@ end
 
 function uniform_dparam_transition(mdp::SimpleGridWorld, s::AbstractVector{Int}, a::Symbol, θ)
     if s in mdp.terminate_from || isterminal(mdp, s)
-        return SparseCat(SA[GWPos(-1,-1)], SA[0.0])
+        return [SparseCat(SA[GWPos(-1,-1)], SA[0.0])]
     end
-
+    θ = only(θ)
     destinations = MVector{length(actions(mdp))+1, GWPos}(undef)
     destinations[1] = s
 
@@ -63,7 +77,7 @@ function uniform_dparam_transition(mdp::SimpleGridWorld, s::AbstractVector{Int},
         end
     end
 
-    return SparseCat(convert(SVector, destinations), convert(SVector, probs))
+    return [SparseCat(convert(SVector, destinations), convert(SVector, probs))]
 end
 
 function full_param_transition(mdp::SimpleGridWorld, s::AbstractVector{Int}, a::Symbol, θv::AbstractArray)
