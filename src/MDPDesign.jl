@@ -19,4 +19,7 @@ export parameterization_gradient
 include("Models/models.jl")
 export ParameterizedModels
 
+include("optimization.jl")
+export RegularizedMDPOptimizationProblem, value_and_grad
+
 end # module MDPDesign
