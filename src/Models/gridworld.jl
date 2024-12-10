@@ -1,3 +1,6 @@
+sigmoid(x, a=0.5, k=1) = a/(1+exp(-k*x)) + a
+d_sigmoid(x, a=0.5, k=1) = (a*k*exp(k*x))/(1+exp(k*x))^2
+
 function vec2grid(s::Tuple{Int,Int}, v)
     if length(v) == prod(s) + 1
         v = v[1:end-1]
@@ -23,7 +26,8 @@ function uniform_param_transition(mdp::SimpleGridWorld, s::AbstractVector{Int}, 
     if s in mdp.terminate_from || isterminal(mdp, s)
         return Deterministic(GWPos(-1,-1))
     end
-    θ = only(θ)
+    θ0 = only(θ)
+    θ = sigmoid(θ0)
 
     destinations = MVector{length(actions(mdp))+1, GWPos}(undef)
     destinations[1] = s
@@ -54,7 +58,9 @@ function uniform_dparam_transition(mdp::SimpleGridWorld, s::AbstractVector{Int},
     if s in mdp.terminate_from || isterminal(mdp, s)
         return [SparseCat(SA[GWPos(-1,-1)], SA[0.0])]
     end
-    θ = only(θ)
+    θ0 = only(θ)
+    θ = sigmoid(θ0)
+    dθ = d_sigmoid(θ0)
     destinations = MVector{length(actions(mdp))+1, GWPos}(undef)
     destinations[1] = s
 
@@ -77,7 +83,7 @@ function uniform_dparam_transition(mdp::SimpleGridWorld, s::AbstractVector{Int},
         end
     end
 
-    return [SparseCat(convert(SVector, destinations), convert(SVector, probs))]
+    return [SparseCat(convert(SVector, destinations), convert(SVector, probs) .* dθ)]
 end
 
 function full_param_transition(mdp::SimpleGridWorld, s::AbstractVector{Int}, a::Symbol, θv::AbstractArray)
@@ -85,7 +91,7 @@ function full_param_transition(mdp::SimpleGridWorld, s::AbstractVector{Int}, a::
         return Deterministic(GWPos(-1,-1))
     end
     s_idx = stateindex(mdp, s)
-    θ = θv[s_idx]
+    θ = sigmoid(θv[s_idx])
 
     destinations = MVector{length(actions(mdp))+1, GWPos}(undef)
     destinations[1] = s
@@ -126,7 +132,9 @@ function full_dparam_transition(mdp::SimpleGridWorld, s::AbstractVector{Int}, a:
         return ∇T_s
     end
     s_idx = stateindex(mdp, s)
-    θ = θv[s_idx]
+    θ0 = θv[s_idx]
+    θ = sigmoid(θ0)
+    dθ = d_sigmoid(θ0)
 
     destinations = MVector{length(actions(mdp))+1, GWPos}(undef)
     destinations[1] = s
@@ -150,7 +158,7 @@ function full_dparam_transition(mdp::SimpleGridWorld, s::AbstractVector{Int}, a:
         end
     end
 
-    ∇T_s[s_idx] = SparseCat(convert(SVector, destinations), convert(SVector, probs))
+    ∇T_s[s_idx] = SparseCat(convert(SVector, destinations), convert(SVector, probs) .* dθ)
 
     return ∇T_s
 end
