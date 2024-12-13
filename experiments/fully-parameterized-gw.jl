@@ -67,3 +67,30 @@ anim2 = @animate for pos ∈ pos2
     scatter!([first(pos)], [last(pos)], c=:white, ms=20, primary=false)
 end
 gif(anim2, "fully-parameterized-lhs-paths-.gif", fps = 3)
+
+
+
+## interesting frames
+pos = SA[1,9]
+V_grid = zeros(gw.mdp.size...)
+S = states(gw.mdp)[1:end-1]
+s_idx = stateindex(gw.mdp, pos)
+for i ∈ eachindex(S)
+    V_grid[S[i]...] = grad[i][s_idx]
+end
+heatmap(V_grid',ticks=false, cmap=:amp, title="All Parameters Effect on Single State")
+scatter!([first(pos)], [last(pos)], c=:white, ms=20, primary=false, widen=false)
+savefig("all-params-single-state.pdf")
+
+pos = SA[8,4]
+V_grid = zeros(gw.mdp.size...)
+S = states(gw.mdp)[1:end-1]
+s_idx = stateindex(gw.mdp, pos)
+for i ∈ eachindex(S)
+    V_grid[S[i]...] = grad[s_idx][i]
+end
+heatmap(V_grid',ticks=false, cmap=:BuPu, title="Single Parameter Effect on All States")
+scatter!([first(pos)], [last(pos)], c=:white, ms=20, widen=false)
+savefig("single-param-all-states.pdf")
+
+heatmap(reduce(hcat, grad), xlabel="s", ylabel="θs", ticks=false, legend=false)

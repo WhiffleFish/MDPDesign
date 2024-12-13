@@ -17,6 +17,9 @@ grad = only(MDPDesign.parameterization_gradient(mdp_sol))
 heatmap(∇V', cmap=:BuPu, xticks=false, yticks=false, size=(800,700))
 savefig("uniformly-parameterized-grad.png")
 
+heatmap(∇V', cmap=:BuPu, xticks=false, yticks=false, title="Uniform Parameterization Value Gradient")
+savefig("uniformly-parameterized-grad.pdf")
+
 using Compose
 img = render(gw.mdp)
 savefig(img)
