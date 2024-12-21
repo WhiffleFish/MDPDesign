@@ -41,11 +41,11 @@ function _parameterization_gradient(m::OptimizedMDPModel, ∇T, λ)
     Ax = mapreduce(vcat, 1:na) do i
         idxs = (ns * (i - 1) + 1) : ns * i
         λa = λ[idxs]
-        diagm(λa) * (I - γ * T[i])
+        spdiagm(λa) * (I - γ * T[i])
     end
     bx = mapreduce(vcat, 1:na) do i
         idxs = (ns * (i - 1) + 1) : ns * i
-        diagm(dλdθ[idxs]) * (-x + R[:, i] + γ * T[i]*x) + diagm(λ[idxs]) * γ * ∇T[i] * x
+        spdiagm(dλdθ[idxs]) * (-x + R[:, i] + γ * T[i]*x) + spdiagm(λ[idxs]) * γ * ∇T[i] * x
     end
     dxdθ = Ax \ bx
     return dxdθ
