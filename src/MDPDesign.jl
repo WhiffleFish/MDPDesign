@@ -1,6 +1,7 @@
 module MDPDesign
 
 using POMDPs
+using ConstrainedPOMDPs
 using POMDPTools
 using JuMP
 using HiGHS
@@ -23,6 +24,6 @@ include("optimization.jl")
 export RegularizedMDPOptimizationProblem, value_and_grad
 
 include("occupancy.jl")
-export occupancy_model
+export occupancy_model, constrained_model
 
 end # module MDPDesign
