@@ -22,4 +22,7 @@ export ParameterizedModels
 include("optimization.jl")
 export RegularizedMDPOptimizationProblem, value_and_grad
 
+include("occupancy.jl")
+export occupancy_model
+
 end # module MDPDesign
